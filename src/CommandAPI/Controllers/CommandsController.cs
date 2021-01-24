@@ -32,7 +32,7 @@ namespace CommandAPI.Controllers
                 return NotFound();
             }
             
-            return Ok(_commandRepo.GetCommandById(id));
+            return Ok(command);
         }
     }
 }
