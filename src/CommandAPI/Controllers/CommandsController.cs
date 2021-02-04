@@ -34,5 +34,43 @@ namespace CommandAPI.Controllers
             
             return Ok(command);
         }
+
+        [HttpPost]
+        public ActionResult<Command> AddCommand(Command command)
+        {
+            _commandRepo.CreateCommand(command);
+
+            return Ok();
+        }
+        
+        [HttpPatch("{id}")]
+        public ActionResult<Command> UpdateCommand(int id)
+        {
+            Command command = _commandRepo.GetCommandById(id);
+
+            if (command == null)
+            {
+                return NotFound();
+            }
+            
+            _commandRepo.UpdateCommand(command);
+
+            return Ok();
+        }
+        
+        [HttpDelete("{id}")]
+        public ActionResult<Command> DeleteCommand(int id)
+        {
+            Command command = _commandRepo.GetCommandById(id);
+
+            if (command == null)
+            {
+                NotFound();
+            }
+            
+            _commandRepo.DeleteCommand(command);
+
+            return NoContent();
+        }
     }
 }
