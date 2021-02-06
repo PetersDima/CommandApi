@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.InteropServices;
 using CommandAPI.Models;
-using Microsoft.EntityFrameworkCore;
 
 namespace CommandAPI.Data
 {
@@ -27,7 +25,7 @@ namespace CommandAPI.Data
 
         public Command GetCommandById(int id)
         {
-            return _context.CommandItems.Find(id);
+            return _context.CommandItems.FirstOrDefault(p => p.Id == id);
         }
 
         public void CreateCommand(Command cmd)
@@ -39,7 +37,7 @@ namespace CommandAPI.Data
 
         public void UpdateCommand(Command cmd)
         {
-            var command = _context.CommandItems.Find(cmd.Id);
+            var command = _context.CommandItems.FirstOrDefault(p => p.Id == cmd.Id);
 
             if (command == null)
             {
