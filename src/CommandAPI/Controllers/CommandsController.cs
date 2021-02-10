@@ -1,7 +1,12 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
+using AutoMapper;
 using CommandAPI.Data;
+using CommandAPI.Dtos;
 using CommandAPI.Models;
+using Microsoft.AspNetCore.JsonPatch;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 
 namespace CommandAPI.Controllers
 {
@@ -10,20 +15,24 @@ namespace CommandAPI.Controllers
     public class CommandsController : ControllerBase
     {
         private readonly ICommandApiRepo _commandRepo;
+        private readonly IMapper _mapper;
 
-        public CommandsController(ICommandApiRepo commandRepo)
+        public CommandsController(ICommandApiRepo commandRepo, IMapper mapper)
         {
             _commandRepo = commandRepo;
+            _mapper = mapper;
         }
         
         [HttpGet]
-        public ActionResult<IEnumerable<Command>> Index()
+        public ActionResult<IEnumerable<CommandReadDto>> GetAllCommands()
         {
-            return Ok(_commandRepo.GetAllCommands());
+            var commandItems = _commandRepo.GetAllCommands();
+            
+            return Ok(_mapper.Map<IEnumerable<CommandReadDto>>(commandItems));
         }
 
-        [HttpGet("{id}")]
-        public ActionResult<Command> GetCommandById(int id)
+        [HttpGet("{id}", Name = "GetCommandById")]
+        public ActionResult<CommandReadDto> GetCommandById(int id)
         {
             Command command = _commandRepo.GetCommandById(id);
             
@@ -32,30 +41,62 @@ namespace CommandAPI.Controllers
                 return NotFound();
             }
             
-            return Ok(command);
+            return Ok(_mapper.Map<CommandReadDto>(command));
         }
 
         [HttpPost]
-        public ActionResult<Command> AddCommand(Command command)
+        public ActionResult<CommandReadDto> CreateCommand(CommandCreateDto dto)
         {
+            var command = _mapper.Map<Command>(dto);
             _commandRepo.CreateCommand(command);
+            _commandRepo.SaveChanges();
 
-            return Ok();
+            var readDto = _mapper.Map<CommandReadDto>(command);
+                
+            return CreatedAtRoute(nameof(GetCommandById), new {Id = readDto.Id}, readDto);
         }
         
-        [HttpPatch("{id}")]
-        public ActionResult<Command> UpdateCommand(int id)
+        [HttpPut("{id}")]
+        public ActionResult UpdateCommand(int id, CommandUpdateDto dto)
         {
-            Command command = _commandRepo.GetCommandById(id);
+            Command commandFromRepo = _commandRepo.GetCommandById(id);
 
-            if (command == null)
+            if (commandFromRepo == null)
             {
                 return NotFound();
             }
+            _mapper.Map(dto, commandFromRepo);
             
-            _commandRepo.UpdateCommand(command);
+            _commandRepo.UpdateCommand(commandFromRepo);
+            _commandRepo.SaveChanges();
 
-            return Ok();
+            return NoContent();
+        }
+        
+        [HttpPatch("{id}")]
+        public ActionResult PartialCommandUpdate(int id, JsonPatchDocument<CommandUpdateDto> patchDoc)
+        {
+            var commandModelFromRepo = _commandRepo.GetCommandById(id);
+            if (commandModelFromRepo == null)
+            {
+                return NotFound();
+            }
+
+            var commandToPatch = _mapper.Map<CommandUpdateDto>(commandModelFromRepo);
+            patchDoc.ApplyTo(commandToPatch, ModelState);
+
+            if (!TryValidateModel(commandToPatch))
+            {
+                return ValidationProblem(ModelState);
+            }
+
+            _mapper.Map(commandToPatch, commandModelFromRepo);
+            
+            _commandRepo.UpdateCommand(commandModelFromRepo);
+
+            _commandRepo.SaveChanges();
+
+            return NoContent();
         }
         
         [HttpDelete("{id}")]
@@ -69,6 +110,7 @@ namespace CommandAPI.Controllers
             }
             
             _commandRepo.DeleteCommand(command);
+            _commandRepo.SaveChanges();
 
             return NoContent();
         }

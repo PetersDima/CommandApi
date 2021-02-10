@@ -1,5 +1,7 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Channels;
 using CommandAPI.Models;
 
 namespace CommandAPI.Data
@@ -30,32 +32,27 @@ namespace CommandAPI.Data
 
         public void CreateCommand(Command cmd)
         {
+            if (cmd == null)
+            {
+                throw new ArgumentNullException(nameof(cmd));
+            }
+            
             _context.CommandItems.Add(cmd);
-
-            SaveChanges();
         }
 
         public void UpdateCommand(Command cmd)
         {
-            var command = _context.CommandItems.FirstOrDefault(p => p.Id == cmd.Id);
-
-            if (command == null)
-            {
-                return;
-            }
-
-            command.CommandLine = cmd.CommandLine;
-            command.HowTo = cmd.HowTo;
-            command.Platform = cmd.Platform;
-
-            _context.SaveChanges();
+            // We don't need an implementation here
         }
 
         public void DeleteCommand(Command cmd)
         {
+            if (cmd == null)
+            {
+                throw new ArgumentNullException(nameof(cmd));
+            }
+            
             _context.CommandItems.Remove(cmd);
-
-            SaveChanges();
         }
     }
 }
